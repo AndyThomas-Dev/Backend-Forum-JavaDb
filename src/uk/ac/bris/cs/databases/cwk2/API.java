@@ -100,7 +100,22 @@ public class API implements APIProvider {
     /* level 1 */
     @Override
     public Result<PersonView> getPersonView(String username) {
-        throw new UnsupportedOperationException("Not supported yet. 7");
+
+        try (Statement s = c.createStatement()) {
+            ResultSet r = s.executeQuery("SELECT * FROM Person WHERE username = '" + username + "'");
+
+            List<PersonView> data =  new ArrayList<PersonView>();
+
+            while (r.next())
+            {
+                data.add(new PersonView(r.getString("name"), r.getString("username"),
+                        r.getString("stuId")));
+            }
+
+            return Result.success(data.get(0));
+        } catch (SQLException ex) {
+            return Result.fatal("database error - " + ex.getMessage());
+        }
     }
 
     @Override
