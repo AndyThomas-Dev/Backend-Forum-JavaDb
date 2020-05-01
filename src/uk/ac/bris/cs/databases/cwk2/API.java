@@ -150,7 +150,43 @@ public class API implements APIProvider {
 
     @Override
     public Result createForum(String title) {
-        throw new UnsupportedOperationException("Not supported yet. 3");
+
+        if (title == null || title.equals("")) {
+            return Result.failure("Name cannot be empty.");
+        }
+
+        try (PreparedStatement p = c.prepareStatement(
+                "SELECT count(1) AS c FROM Forum WHERE title = ?"
+        )) {
+            p.setString(1, title);
+            ResultSet r = p.executeQuery();
+
+            if (r.next() && r.getInt("c") > 0) {
+                return Result.failure("A forum called " + title + " already exists.");
+            }
+        } catch (SQLException e) {
+            return Result.fatal(e.getMessage());
+        }
+
+        try (PreparedStatement p = c.prepareStatement(
+                "INSERT INTO Forum (title, topics) VALUES (?, ?)"
+        )) {
+            p.setString(1, title);
+            p.setString(2, "Testing.");
+            p.executeUpdate();
+
+            c.commit();
+        } catch (SQLException e) {
+            try {
+                c.rollback();
+            } catch (SQLException f) {
+                return Result.fatal("SQL error on rollback - [" + f +
+                        "] from handling exception " + e);
+            }
+            return Result.fatal(e.getMessage());
+        }
+
+        return Result.success();
     }
 
     @Override
