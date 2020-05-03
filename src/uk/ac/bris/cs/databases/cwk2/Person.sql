@@ -50,6 +50,7 @@ FOREIGN KEY (forumid) REFERENCES Forum(id)
 
 INSERT INTO Forum VALUES (1, 'First Forum'); 
 INSERT INTO Topic VALUES (1, 'First Topic', 'vz19513', 'This is the first topic');
+INSERT INTO Topic VALUES (3, 'Topic In 2nd Forum', 'vz19513', 'Post content. Second Forum.');
 INSERT INTO Post VALUES (1, 'First Post', 'vz19513','This is our first post');
 
 INSERT INTO Posts_In_Topic VALUES (1, 1, 1);
@@ -59,7 +60,12 @@ INSERT INTO Topics_In_Forum VALUES (1, 2, 1);
 ALTER TABLE Forum ALTER COLUMN topics DEFAULT 'Temp';
 
 -- Select topics alongside their forumid
-SELECT Topic.title, Topic.text, Topics_In_Forum.forumid AS Forum FROM Topic 
+SELECT Topic.title, Topic.id, Topics_In_Forum.forumid AS Forum FROM Topic
 JOIN Topics_In_Forum ON Topics_In_Forum.topicid = Topic.id
 WHERE Topics_In_Forum.forumid = 1;
+
+--- Select posts for a topic
+SELECT Post.title, Post.username, Post.postedAt, Posts_In_Topic.topicid FROM Post
+JOIN Posts_In_Topic ON Posts_In_Topic.postid = Post.id\n
+WHERE Posts_In_Topic.topicid = 1;
 

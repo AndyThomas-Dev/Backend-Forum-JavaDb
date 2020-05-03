@@ -146,12 +146,31 @@ public class API implements APIProvider {
     @Override
     public Result<TopicView> getTopic(int topicId) {
 
+        List<SimplePostView> posts = new ArrayList<SimplePostView>();
+
+        try (Statement s = c.createStatement()) {
+
+            ResultSet r = s.executeQuery("SELECT Post.title, Post.username, Post.postedAt, Post.text, Posts_In_Topic.topicid FROM Post \n" +
+                    "JOIN Posts_In_Topic ON Posts_In_Topic.postid = Post.id\n" +
+                    "WHERE Posts_In_Topic.topicid = " + topicId);
+
+            int counter = 1;
+
+            while (r.next()) {
+                // int postNumber, String author, String text, String postedAt) {
+                posts.add(new SimplePostView(counter, r.getString("username"), r.getString("text"),
+                        r.getString("postedAt") ));
+                counter++;
+            }
+
+        } catch (SQLException ex) {
+            return Result.fatal("database error - " + ex.getMessage());
+        }
+
         try (Statement s = c.createStatement()) {
             ResultSet r = s.executeQuery("SELECT id, title FROM Topic");
 
             List<TopicView> data =  new ArrayList<TopicView>();
-            List<SimplePostView> posts = new ArrayList<SimplePostView>();
-            posts.add(new SimplePostView(1,"AuthorName", "Text here.", "DatePosted"));
 
             while (r.next()) {
                 data.add(new TopicView(r.getInt("id"), r.getString("title"), posts));
@@ -186,10 +205,9 @@ public class API implements APIProvider {
         }
 
         try (PreparedStatement p = c.prepareStatement(
-                "INSERT INTO Forum (title, topics) VALUES (?, ?)"
+                "INSERT INTO Forum (title) VALUES (?)"
         )) {
             p.setString(1, title);
-            p.setString(2, "Testing.");
             p.executeUpdate();
 
             c.commit();
@@ -210,6 +228,7 @@ public class API implements APIProvider {
     @Override
     public Result<ForumView> getForum(int id) {
 
+        // First part - gets topics for forum
         List<SimpleTopicSummaryView> topicsInForum =  new ArrayList<SimpleTopicSummaryView>();
 
         try (Statement s = c.createStatement()) {
@@ -226,6 +245,7 @@ public class API implements APIProvider {
             return Result.fatal("database error - " + ex.getMessage());
         }
 
+        // Get Id and Title for Forum
         try (Statement s = c.createStatement()) {
             ResultSet r = s.executeQuery("SELECT id, title FROM Forum WHERE id = " + id );
 
@@ -253,6 +273,7 @@ public class API implements APIProvider {
 
     @Override
     public Result createTopic(int forumId, String username, String title, String text) {
+
         if (title == null || title.equals("")) {
             return Result.failure("Title cannot be empty.");
         }

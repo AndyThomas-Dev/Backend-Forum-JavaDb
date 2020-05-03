@@ -1,0 +1,6 @@
+
+There were going to be multiple one-to-many relationships.
+
+To address this, I created associative the tables (Topics_In_Forum, Posts_In_Topic) containing only the primary keys of their respective tables.
+
+This prevents much of the data being needlessly replicated.
