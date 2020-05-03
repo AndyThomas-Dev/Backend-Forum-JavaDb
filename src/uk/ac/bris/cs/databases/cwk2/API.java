@@ -35,6 +35,7 @@ public class API implements APIProvider {
     /* predefined methods */
 
     @Override
+    // Done
     public Result<Map<String, String>> getUsers() {
         try (Statement s = c.createStatement()) {
             ResultSet r = s.executeQuery("SELECT name, username FROM Person");
@@ -51,6 +52,7 @@ public class API implements APIProvider {
     }
 
     @Override
+    // Done
     public Result addNewPerson(String name, String username, String studentId) {
         if (studentId != null && studentId.equals("")) {
             return Result.failure("StudentId can be null, but cannot be the empty string.");
@@ -99,6 +101,7 @@ public class API implements APIProvider {
 
     /* level 1 */
     @Override
+    // Done
     public Result<PersonView> getPersonView(String username) {
 
         try (Statement s = c.createStatement()) {
@@ -119,6 +122,7 @@ public class API implements APIProvider {
     }
 
     @Override
+    // Done
     public Result<List<ForumSummaryView>> getForums() {
 
         try (Statement s = c.createStatement()) {
@@ -139,18 +143,35 @@ public class API implements APIProvider {
     @Override
 
     // Find topic (based on id) and count total posts within it.
+    // DONE - Not sure where this is used?
     public Result<Integer> countPostsInTopic(int topicId) {
-        throw new UnsupportedOperationException("Not supported yet. 1");
+
+        List<Integer> data =  new ArrayList<Integer>();
+
+        try (Statement s = c.createStatement()) {
+
+            ResultSet r = s.executeQuery("SELECT COUNT(*) AS c FROM Posts_In_Topic WHERE topicid = " + topicId);
+
+            while (r.next()) {
+                data.add(r.getInt("c"));
+            }
+
+            return Result.success(data.get(0));
+
+        } catch (SQLException ex) {
+            return Result.fatal("database error - " + ex.getMessage());
+        }
     }
 
     @Override
+    // DONE
     public Result<TopicView> getTopic(int topicId) {
 
         List<SimplePostView> posts = new ArrayList<SimplePostView>();
 
         try (Statement s = c.createStatement()) {
 
-            ResultSet r = s.executeQuery("SELECT Post.title, Post.username, Post.postedAt, Post.text, Posts_In_Topic.topicid FROM Post \n" +
+            ResultSet r = s.executeQuery("SELECT Post.username, Post.postedAt, Post.text, Posts_In_Topic.topicid FROM Post \n" +
                     "JOIN Posts_In_Topic ON Posts_In_Topic.postid = Post.id\n" +
                     "WHERE Posts_In_Topic.topicid = " + topicId);
 
@@ -183,7 +204,7 @@ public class API implements APIProvider {
     }
 
     /* level 2 */
-
+    // DONE
     @Override
     public Result createForum(String title) {
 
@@ -224,7 +245,7 @@ public class API implements APIProvider {
         return Result.success();
     }
 
-    // Id, Title, Topics
+    // DONE
     @Override
     public Result<ForumView> getForum(int id) {
 
@@ -250,7 +271,6 @@ public class API implements APIProvider {
             ResultSet r = s.executeQuery("SELECT id, title FROM Forum WHERE id = " + id );
 
             List<ForumView> data =  new ArrayList<ForumView>();
-            List<SimpleTopicSummaryView> temp = new ArrayList<SimpleTopicSummaryView>();
 
             while (r.next()) {
                 data.add(new ForumView(r.getInt("id"), r.getString("title"), topicsInForum));
@@ -265,7 +285,30 @@ public class API implements APIProvider {
     @Override
     public Result createPost(int topicId, String username, String text) {
 
-        throw new UnsupportedOperationException("Not supported yet. CreatePost.");
+        if (text == null || text.equals("")) {
+            return Result.failure("Text cannot be empty.");
+        }
+
+        try (PreparedStatement p = c.prepareStatement(
+                "INSERT INTO Post (username, text) VALUES (?, ?)"
+        )) {
+            p.setString(1, username);
+            p.setString(2, text);
+            p.executeUpdate();
+
+            c.commit();
+        } catch (SQLException e) {
+            try {
+                c.rollback();
+            } catch (SQLException f) {
+                return Result.fatal("SQL error on rollback - [" + f +
+                        "] from handling exception " + e);
+            }
+            return Result.fatal(e.getMessage());
+        }
+
+        return Result.success();
+
 }
 
 

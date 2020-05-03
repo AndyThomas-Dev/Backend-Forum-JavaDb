@@ -65,7 +65,9 @@ JOIN Topics_In_Forum ON Topics_In_Forum.topicid = Topic.id
 WHERE Topics_In_Forum.forumid = 1;
 
 --- Select posts for a topic
-SELECT Post.title, Post.username, Post.postedAt, Posts_In_Topic.topicid FROM Post
-JOIN Posts_In_Topic ON Posts_In_Topic.postid = Post.id\n
+SELECT Post.title, Post.username, Post.postedAt, Post.text, Posts_In_Topic.topicid FROM Post
+JOIN Posts_In_Topic ON Posts_In_Topic.postid = Post.id
 WHERE Posts_In_Topic.topicid = 1;
 
+--- Count posts in topic 
+SELECT COUNT(*) AS c FROM Posts_In_Topic WHERE topicid = 1;
