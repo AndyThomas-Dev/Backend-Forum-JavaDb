@@ -137,13 +137,30 @@ public class API implements APIProvider {
     }
 
     @Override
+
+    // Find topic (based on id) and count total posts within it.
     public Result<Integer> countPostsInTopic(int topicId) {
         throw new UnsupportedOperationException("Not supported yet. 1");
     }
 
     @Override
     public Result<TopicView> getTopic(int topicId) {
-        throw new UnsupportedOperationException("Not supported yet. 2");
+
+        try (Statement s = c.createStatement()) {
+            ResultSet r = s.executeQuery("SELECT id, title FROM Topic");
+
+            List<TopicView> data =  new ArrayList<TopicView>();
+            List<SimplePostView> posts = new ArrayList<SimplePostView>();
+            posts.add(new SimplePostView(1,"AuthorName", "Text here.", "DatePosted"));
+
+            while (r.next()) {
+                data.add(new TopicView(r.getInt("id"), r.getString("title"), posts));
+            }
+
+            return Result.success(data.get(0));
+        } catch (SQLException ex) {
+            return Result.fatal("database error - " + ex.getMessage());
+        }
     }
 
     /* level 2 */
@@ -189,22 +206,77 @@ public class API implements APIProvider {
         return Result.success();
     }
 
+    // Id, Title, Topics
     @Override
     public Result<ForumView> getForum(int id) {
-        throw new UnsupportedOperationException("Not supported yet. 4");
+
+        List<SimpleTopicSummaryView> topicsInForum =  new ArrayList<SimpleTopicSummaryView>();
+
+        try (Statement s = c.createStatement()) {
+            ResultSet r = s.executeQuery("SELECT Topic.title, Topic.id, Topics_In_Forum.forumid AS Forum FROM Topic \n" +
+                    "JOIN Topics_In_Forum ON Topics_In_Forum.topicid = Topic.id\n" +
+                    "WHERE Topics_In_Forum.forumid = " + id);
+
+            // int topicId, int forumId, String title
+            while (r.next()) {
+                topicsInForum.add(new SimpleTopicSummaryView(r.getInt("Topic.id"), id, r.getString("Topic.title")));
+            }
+
+        } catch (SQLException ex) {
+            return Result.fatal("database error - " + ex.getMessage());
+        }
+
+        try (Statement s = c.createStatement()) {
+            ResultSet r = s.executeQuery("SELECT id, title FROM Forum WHERE id = " + id );
+
+            List<ForumView> data =  new ArrayList<ForumView>();
+            List<SimpleTopicSummaryView> temp = new ArrayList<SimpleTopicSummaryView>();
+
+            while (r.next()) {
+                data.add(new ForumView(r.getInt("id"), r.getString("title"), topicsInForum));
+            }
+
+            return Result.success(data.get(0));
+        } catch (SQLException ex) {
+            return Result.fatal("database error - " + ex.getMessage());
+        }
     }
 
     @Override
     public Result createPost(int topicId, String username, String text) {
-        throw new UnsupportedOperationException("Not supported yet. 5");
-    }
+
+        throw new UnsupportedOperationException("Not supported yet. CreatePost.");
+}
 
 
     /* level 3 */
 
     @Override
     public Result createTopic(int forumId, String username, String title, String text) {
-        throw new UnsupportedOperationException("Not supported yet. 6");
+        if (title == null || title.equals("")) {
+            return Result.failure("Title cannot be empty.");
+        }
+
+        try (PreparedStatement p = c.prepareStatement(
+                "INSERT INTO Topic (title, username, text) VALUES (?, ?, ?)"
+        )) {
+            p.setString(1, title);
+            p.setString(2, username);
+            p.setString(3, text);
+            p.executeUpdate();
+
+            c.commit();
+        } catch (SQLException e) {
+            try {
+                c.rollback();
+            } catch (SQLException f) {
+                return Result.fatal("SQL error on rollback - [" + f +
+                        "] from handling exception " + e);
+            }
+            return Result.fatal(e.getMessage());
+        }
+
+        return Result.success();
     }
 
 }
