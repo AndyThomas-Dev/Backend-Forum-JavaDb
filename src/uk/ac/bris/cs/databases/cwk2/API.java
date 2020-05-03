@@ -20,6 +20,11 @@ import uk.ac.bris.cs.databases.api.SimplePostView;
 import uk.ac.bris.cs.databases.api.SimpleTopicSummaryView;
 import uk.ac.bris.cs.databases.api.TopicView;
 
+// My imports
+import java.util.Calendar;
+import java.util.Date;
+import java.text.SimpleDateFormat;
+
 /**
  *
  * @author csxdb
@@ -283,17 +288,57 @@ public class API implements APIProvider {
     }
 
     @Override
+    // Add current date
     public Result createPost(int topicId, String username, String text) {
+
+        String date;
+        List<Integer> data =  new ArrayList<Integer>();
 
         if (text == null || text.equals("")) {
             return Result.failure("Text cannot be empty.");
         }
 
+        // Creating entry in Post table
         try (PreparedStatement p = c.prepareStatement(
-                "INSERT INTO Post (username, text) VALUES (?, ?)"
+                "INSERT INTO Post (username, text, postedAt) VALUES (?, ?, ?)"
         )) {
+            date = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(new Date());
+
             p.setString(1, username);
             p.setString(2, text);
+            p.setString(3, date);
+            p.executeUpdate();
+
+            c.commit();
+        } catch (SQLException e) {
+            try {
+                c.rollback();
+            } catch (SQLException f) {
+                return Result.fatal("SQL error on rollback - [" + f +
+                        "] from handling exception " + e);
+            }
+            return Result.fatal(e.getMessage());
+        }
+
+        // Getting the id of the new post.
+        try (Statement s = c.createStatement()) {
+            ResultSet r = s.executeQuery("SELECT id FROM Post WHERE username = '" + username + "' AND postedAt = '" + date + "'");
+
+            while (r.next()) {
+                data.add(r.getInt("id"));
+            }
+
+        } catch (SQLException ex) {
+            return Result.fatal("database error - " + ex.getMessage());
+        }
+
+        // Inserting into associative table
+        try (PreparedStatement p = c.prepareStatement(
+                "INSERT INTO Posts_In_Topic (postid, topicid) VALUES (?, ?)"
+        )) {
+
+            p.setInt(1, data.get(0));
+            p.setInt(2, topicId);
             p.executeUpdate();
 
             c.commit();
@@ -308,7 +353,6 @@ public class API implements APIProvider {
         }
 
         return Result.success();
-
 }
 
 
