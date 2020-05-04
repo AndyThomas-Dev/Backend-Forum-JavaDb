@@ -194,6 +194,7 @@ public class API implements APIProvider {
         }
 
         try (Statement s = c.createStatement()) {
+            // Determines link to create new post
             ResultSet r = s.executeQuery("SELECT id, title FROM Topic WHERE id = " + topicId);
 
             List<TopicView> data =  new ArrayList<TopicView>();
