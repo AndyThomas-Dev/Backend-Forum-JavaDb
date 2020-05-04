@@ -16,14 +16,15 @@ CREATE TABLE Post (
 id INTEGER PRIMARY KEY AUTO_INCREMENT,
 title VARCHAR(100) NOT NULL,
 username VARCHAR(100) NOT NULL,
-text VARCHAR(800) NOT NULL
+text VARCHAR(800) NOT NULL,
+postedAT VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE Topic (
 id INTEGER PRIMARY KEY AUTO_INCREMENT,
 title VARCHAR(100) NOT NULL,
 username VARCHAR(100) NOT NULL,
-text VARCHAR(800) NOT NULL
+postedAT VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE Posts_In_Topic ( 
@@ -36,7 +37,7 @@ FOREIGN KEY (postid) REFERENCES Post(id)
 
 CREATE TABLE Forum (
 id INTEGER PRIMARY KEY AUTO_INCREMENT,
-title VARCHAR(100) NOT NULL
+title VARCHAR(100) UNIQUE NOT NULL
 );
 
 CREATE TABLE Topics_In_Forum ( 
@@ -49,7 +50,7 @@ FOREIGN KEY (forumid) REFERENCES Forum(id)
 
 
 INSERT INTO Forum VALUES (1, 'First Forum'); 
-INSERT INTO Topic VALUES (1, 'First Topic', 'vz19513', 'This is the first topic');
+INSERT INTO Topic VALUES (1, 'First Topic', 'vz19513', 'This is the first topic', '03-05-2020 21:30:11');
 INSERT INTO Topic VALUES (3, 'Topic In 2nd Forum', 'vz19513', 'Post content. Second Forum.');
 INSERT INTO Post VALUES (1, 'First Post', 'vz19513','This is our first post');
 
@@ -71,3 +72,5 @@ WHERE Posts_In_Topic.topicid = 1;
 
 --- Count posts in topic 
 SELECT COUNT(*) AS c FROM Posts_In_Topic WHERE topicid = 1;
+
+--- SELECT * FROM Post WHERE username = 'vz19513' AND postedAt = '03-05-2020';

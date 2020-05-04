@@ -358,6 +358,7 @@ public class API implements APIProvider {
 
     /* level 3 */
 
+    // Need to create first post as well
     @Override
     public Result createTopic(int forumId, String username, String title, String text) {
 
@@ -365,12 +366,14 @@ public class API implements APIProvider {
             return Result.failure("Title cannot be empty.");
         }
 
+        // New topic is inserted into table
         try (PreparedStatement p = c.prepareStatement(
-                "INSERT INTO Topic (title, username, text) VALUES (?, ?, ?)"
+                "INSERT INTO Topic (title, username, text, postedAT) VALUES (?, ?, ?)"
         )) {
             p.setString(1, title);
             p.setString(2, username);
             p.setString(3, text);
+            p.setString(4, text);
             p.executeUpdate();
 
             c.commit();
