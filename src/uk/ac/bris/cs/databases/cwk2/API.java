@@ -183,7 +183,7 @@ public class API implements APIProvider {
             int counter = 1;
 
             while (r.next()) {
-                // int postNumber, String author, String text, String postedAt) {
+                // Add name rather than username
                 posts.add(new SimplePostView(counter, r.getString("username"), r.getString("text"),
                         r.getString("postedAt") ));
                 counter++;
@@ -194,7 +194,7 @@ public class API implements APIProvider {
         }
 
         try (Statement s = c.createStatement()) {
-            ResultSet r = s.executeQuery("SELECT id, title FROM Topic");
+            ResultSet r = s.executeQuery("SELECT id, title FROM Topic WHERE id = " + topicId);
 
             List<TopicView> data =  new ArrayList<TopicView>();
 

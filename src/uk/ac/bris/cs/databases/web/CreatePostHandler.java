@@ -12,9 +12,11 @@ import uk.ac.bris.cs.databases.api.Result;
 public class CreatePostHandler extends AbstractPostHandler {
     
     @Override
-    public RenderPair handlePost(Map<String,String> params,
+    public RenderPair handlePost(Map<String, String> params,
         NanoHTTPD.IHTTPSession session) {
-        
+
+        System.out.println(params);
+
         NanoHTTPD.CookieHandler h = session.getCookies();
         String name = h.read("user");
         
@@ -23,6 +25,9 @@ public class CreatePostHandler extends AbstractPostHandler {
         }
         
         int topicId = Integer.parseInt(params.get("topic"));
+
+        System.out.println(topicId);
+
         if (topicId == 0) {
             return new RenderPair(null, Result.failure("Got zero topic id."));
         }
