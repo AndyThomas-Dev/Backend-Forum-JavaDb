@@ -366,14 +366,106 @@ public class API implements APIProvider {
             return Result.failure("Title cannot be empty.");
         }
 
+        String date;
         // New topic is inserted into table
         try (PreparedStatement p = c.prepareStatement(
-                "INSERT INTO Topic (title, username, text, postedAT) VALUES (?, ?, ?)"
+                "INSERT INTO Topic (title, username, postedAT) VALUES (?, ?, ?)"
         )) {
+
+            date = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(new Date());
+
             p.setString(1, title);
             p.setString(2, username);
-            p.setString(3, text);
-            p.setString(4, text);
+            p.setString(3, date);
+            p.executeUpdate();
+
+            c.commit();
+        } catch (SQLException e) {
+            try {
+                c.rollback();
+            } catch (SQLException f) {
+                return Result.fatal("SQL error on rollback - [" + f +
+                        "] from handling exception " + e);
+            }
+            return Result.fatal(e.getMessage());
+        }
+
+        // Get the Topic Id (for later use)
+        List<Integer> topicId =  new ArrayList<Integer>();
+
+        try (Statement s = c.createStatement()) {
+            ResultSet r = s.executeQuery("SELECT id FROM Topic WHERE username = '" + username + "' AND postedAt = '" + date + "'");
+
+            while (r.next()) {
+                topicId.add(r.getInt("id"));
+            }
+
+        } catch (SQLException ex) {
+            return Result.fatal("database error - " + ex.getMessage());
+        }
+
+        // Add to associative table (Topics in Forum)
+        try (PreparedStatement p = c.prepareStatement(
+                "INSERT INTO Topics_In_Forum (topicid, forumid) VALUES (?, ?)"
+        )) {
+
+            p.setInt(1, topicId.get(0));
+            p.setInt(2, forumId);
+            p.executeUpdate();
+
+            c.commit();
+        } catch (SQLException e) {
+            try {
+                c.rollback();
+            } catch (SQLException f) {
+                return Result.fatal("SQL error on rollback - [" + f +
+                        "] from handling exception " + e);
+            }
+            return Result.fatal(e.getMessage());
+        }
+
+        // Create first post in topic
+        try (PreparedStatement p = c.prepareStatement(
+                "INSERT INTO Post (username, text, postedAt) VALUES (?, ?, ?)"
+        )) {
+
+            p.setString(1, username);
+            p.setString(2, text);
+            p.setString(3, date);
+            p.executeUpdate();
+
+            c.commit();
+        } catch (SQLException e) {
+            try {
+                c.rollback();
+            } catch (SQLException f) {
+                return Result.fatal("SQL error on rollback - [" + f +
+                        "] from handling exception " + e);
+            }
+            return Result.fatal(e.getMessage());
+        }
+
+        List<Integer> data =  new ArrayList<Integer>();
+
+        // Getting the id of the new post.
+        try (Statement s = c.createStatement()) {
+            ResultSet r = s.executeQuery("SELECT id FROM Post WHERE username = '" + username + "' AND postedAt = '" + date + "'");
+
+            while (r.next()) {
+                data.add(r.getInt("id"));
+            }
+
+        } catch (SQLException ex) {
+            return Result.fatal("database error - " + ex.getMessage());
+        }
+
+        // Inserting into next associative table
+        try (PreparedStatement p = c.prepareStatement(
+                "INSERT INTO Posts_In_Topic (postid, topicid) VALUES (?, ?)"
+        )) {
+
+            p.setInt(1, data.get(0));
+            p.setInt(2, topicId.get(0));
             p.executeUpdate();
 
             c.commit();
