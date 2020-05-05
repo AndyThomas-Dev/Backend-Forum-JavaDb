@@ -48,3 +48,22 @@ forumid INTEGER,
 FOREIGN KEY (topicid) REFERENCES Topic(id), 
 FOREIGN KEY (forumid) REFERENCES Forum(id)
 );
+
+-- New tables for Task3
+-- Associative table
+CREATE TABLE User_Likes_Posts ( 
+id INTEGER PRIMARY KEY AUTO_INCREMENT, 
+postid INTEGER, 
+userid INTEGER, 
+FOREIGN KEY (postid) REFERENCES Post(id), 
+FOREIGN KEY (userid) REFERENCES Person(id)
+);
+
+-- Associative table
+CREATE TABLE User_Likes_Topics ( 
+id INTEGER PRIMARY KEY AUTO_INCREMENT, 
+topicid INTEGER, 
+userid INTEGER, 
+FOREIGN KEY (topicid) REFERENCES Topic(id), 
+FOREIGN KEY (userid) REFERENCES Person(id)
+);

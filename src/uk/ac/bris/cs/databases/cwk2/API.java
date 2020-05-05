@@ -289,7 +289,6 @@ public class API implements APIProvider {
     }
 
     @Override
-    // Add current date
     public Result createPost(int topicId, String username, String text) {
 
         String date;
@@ -323,7 +322,8 @@ public class API implements APIProvider {
 
         // Getting the id of the new post.
         try (Statement s = c.createStatement()) {
-            ResultSet r = s.executeQuery("SELECT id FROM Post WHERE username = '" + username + "' AND postedAt = '" + date + "'");
+            ResultSet r = s.executeQuery("SELECT id FROM Post WHERE username = '" + username +
+                    "' AND postedAt = '" + date + "'");
 
             while (r.next()) {
                 data.add(r.getInt("id"));
@@ -332,6 +332,8 @@ public class API implements APIProvider {
         } catch (SQLException ex) {
             return Result.fatal("database error - " + ex.getMessage());
         }
+
+        if(data.size() > 1) { return Result.fatal("Database error."); }
 
         // Inserting into associative table
         try (PreparedStatement p = c.prepareStatement(
@@ -358,13 +360,15 @@ public class API implements APIProvider {
 
 
     /* level 3 */
-
-    // Need to create first post as well
     @Override
     public Result createTopic(int forumId, String username, String title, String text) {
 
         if (title == null || title.equals("")) {
             return Result.failure("Title cannot be empty.");
+        }
+
+        if (text == null || text.equals("")) {
+            return Result.failure("Text cannot be empty.");
         }
 
         String date;
