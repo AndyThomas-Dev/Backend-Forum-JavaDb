@@ -33,8 +33,26 @@ public class API implements APIProvider {
 
     private final Connection c;
 
+    private final int maxPostSize = 2500;
+
+    private final int maxTopicTitleSize = 100;
+
+    private final int maxForumTitleSize = 100;
+
     public API(Connection c) {
         this.c = c;
+    }
+
+    public int getMaxPostSize() {
+        return maxPostSize;
+    }
+
+    public int getMaxForumTitleSize() {
+        return maxForumTitleSize;
+    }
+
+    public int getMaxTopicTitleSize() {
+        return maxTopicTitleSize;
     }
 
     /* predefined methods */
@@ -42,6 +60,7 @@ public class API implements APIProvider {
     @Override
     // Done
     public Result<Map<String, String>> getUsers() {
+
         try (Statement s = c.createStatement()) {
             ResultSet r = s.executeQuery("SELECT name, username FROM Person");
 
@@ -57,8 +76,10 @@ public class API implements APIProvider {
     }
 
     @Override
-    // Done
+    // Includes user supplied data.
     public Result addNewPerson(String name, String username, String studentId) {
+
+        // Move to function
         if (studentId != null && studentId.equals("")) {
             return Result.failure("StudentId can be null, but cannot be the empty string.");
         }
@@ -67,6 +88,13 @@ public class API implements APIProvider {
         }
         if (username == null || username.equals("")) {
             return Result.failure("Username cannot be empty.");
+        }
+        if (name.length() > 100) {
+            return Result.failure("Name is too long. Max length a hundred characters.");
+        }
+
+        if (username.length() > 10) {
+            return Result.failure("Username is too long. Max length ten characters.");
         }
 
         try (PreparedStatement p = c.prepareStatement(
@@ -123,6 +151,10 @@ public class API implements APIProvider {
                         r.getString("stuId")));
             }
 
+            if(data.size() > 1){
+                return Result.failure("Multiple entries returned for same username.");
+            }
+
             return Result.success(data.get(0));
         } catch (SQLException ex) {
             return Result.fatal("database error - " + ex.getMessage());
@@ -130,7 +162,6 @@ public class API implements APIProvider {
     }
 
     @Override
-    // Done
     public Result<List<ForumSummaryView>> getForums() {
 
         try (Statement s = c.createStatement()) {
@@ -153,15 +184,17 @@ public class API implements APIProvider {
     // Find topic (based on id) and count total posts within it.
     public Result<Integer> countPostsInTopic(int topicId) {
 
-        if (id < 0)) {
-            return Result.failure("Invalid topic id.);
+        if (topicId <= 0) {
+            return Result.failure("Invalid topic id.");
         }
 
         List<Integer> data =  new ArrayList<Integer>();
 
-        try (Statement s = c.createStatement()) {
+        String query = "SELECT COUNT(*) AS c FROM Posts_In_Topic WHERE topicid = " + topicId;
 
-            ResultSet r = s.executeQuery("SELECT COUNT(*) AS c FROM Posts_In_Topic WHERE topicid = " + topicId);
+        try (PreparedStatement s = c.prepareStatement(query)) {
+
+            ResultSet r = s.executeQuery();
 
             while (r.next()) {
                 data.add(r.getInt("c"));
@@ -175,8 +208,11 @@ public class API implements APIProvider {
     }
 
     @Override
-    // DONE
     public Result<TopicView> getTopic(int topicId) {
+
+        if (topicId <= 0) {
+            return Result.failure("Invalid topic id.");
+        }
 
         List<SimplePostView> posts = new ArrayList<SimplePostView>();
 
@@ -221,6 +257,10 @@ public class API implements APIProvider {
 
         if (title == null || title.equals("")) {
             return Result.failure("Title cannot be empty.");
+        }
+
+        if(title.length() > getMaxForumTitleSize()){
+            return Result.failure("Title too long. Max 100 characters.");
         }
 
         try (PreparedStatement p = c.prepareStatement(
@@ -374,6 +414,10 @@ public class API implements APIProvider {
 
         if (text == null || text.equals("")) {
             return Result.failure("Text cannot be empty.");
+        }
+
+        if(title.length() > getMaxTopicTitleSize()){
+            return Result.failure("Topic title is too long. Max 100 characters.");
         }
 
         String date;
