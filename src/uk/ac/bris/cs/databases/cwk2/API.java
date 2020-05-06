@@ -106,8 +106,11 @@ public class API implements APIProvider {
 
     /* level 1 */
     @Override
-    // Done
     public Result<PersonView> getPersonView(String username) {
+
+        if (username == null || username.equals("")) {
+            return Result.failure("Username cannot be empty.");
+        }
 
         try (Statement s = c.createStatement()) {
             ResultSet r = s.executeQuery("SELECT * FROM Person WHERE username = '" + username + "'");
@@ -148,8 +151,11 @@ public class API implements APIProvider {
     @Override
 
     // Find topic (based on id) and count total posts within it.
-    // DONE - Not sure where this is used?
     public Result<Integer> countPostsInTopic(int topicId) {
+
+        if (id < 0)) {
+            return Result.failure("Invalid topic id.);
+        }
 
         List<Integer> data =  new ArrayList<Integer>();
 
@@ -210,12 +216,11 @@ public class API implements APIProvider {
     }
 
     /* level 2 */
-    // DONE
     @Override
     public Result createForum(String title) {
 
         if (title == null || title.equals("")) {
-            return Result.failure("Name cannot be empty.");
+            return Result.failure("Title cannot be empty.");
         }
 
         try (PreparedStatement p = c.prepareStatement(
