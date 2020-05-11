@@ -121,27 +121,10 @@ public class API implements APIProvider {
             return Result.failure(validation);
         }
 
-//        if (studentId != null && studentId.equals("")) {
-//            return Result.failure("StudentId can be null, but cannot be the empty string.");
-//        }
-//
-//        if (name == null || name.equals("")) {
-//            return Result.failure("Name cannot be empty.");
-//        }
-//        if (username == null || username.equals("")) {
-//            return Result.failure("Username cannot be empty.");
-//        }
-//        if (name.length() > getMaxNameLength()) {
-//            return Result.failure("Name is too long. Max length a hundred characters.");
-//        }
-//
-//        if (username.length() > getMaxUsernameSize()) {
-//            return Result.failure("Username is too long. Max length ten characters.");
-//        }
+        String query = "SELECT count(1) AS c FROM Person WHERE username = ?";
 
-        try (PreparedStatement p = c.prepareStatement(
-            "SELECT count(1) AS c FROM Person WHERE username = ?"
-        )) {
+        try (PreparedStatement p = c.prepareStatement(query))
+        {
             p.setString(1, username);
             ResultSet r = p.executeQuery();
 
@@ -152,9 +135,9 @@ public class API implements APIProvider {
             return Result.fatal(e.getMessage());
         }
 
-        try (PreparedStatement p = c.prepareStatement(
-            "INSERT INTO Person (name, username, stuId) VALUES (?, ?, ?)"
-        )) {
+        query = "INSERT INTO Person (name, username, stuId) VALUES (?, ?, ?)";
+
+        try (PreparedStatement p = c.prepareStatement(query)) {
             p.setString(1, name);
             p.setString(2, username);
             p.setString(3, studentId);
@@ -182,8 +165,10 @@ public class API implements APIProvider {
             return Result.failure("Username cannot be empty.");
         }
 
+        String query = "SELECT * FROM Person WHERE username = '" + username + "'";
+
         try (Statement s = c.createStatement()) {
-            ResultSet r = s.executeQuery("SELECT * FROM Person WHERE username = '" + username + "'");
+            ResultSet r = s.executeQuery(query);
 
             List<PersonView> data =  new ArrayList<PersonView>();
 
@@ -206,9 +191,10 @@ public class API implements APIProvider {
     @Override
     public Result<List<ForumSummaryView>> getForums() {
 
-        try (Statement s = c.createStatement()) {
-            ResultSet r = s.executeQuery("SELECT id, title FROM Forum");
+        String query = "SELECT id, title FROM Forum";
 
+        try (Statement s = c.createStatement()) {
+            ResultSet r = s.executeQuery(query);
             List<ForumSummaryView> data =  new ArrayList<ForumSummaryView>();
 
             while (r.next()) {
@@ -258,11 +244,13 @@ public class API implements APIProvider {
 
         List<SimplePostView> posts = new ArrayList<SimplePostView>();
 
+        String query = "SELECT Post.username, Post.postedAt, Post.text, Posts_In_Topic.topicid FROM Post \n" +
+                "JOIN Posts_In_Topic ON Posts_In_Topic.postid = Post.id\n" +
+                "WHERE Posts_In_Topic.topicid = " + topicId;
+
         try (Statement s = c.createStatement()) {
 
-            ResultSet r = s.executeQuery("SELECT Post.username, Post.postedAt, Post.text, Posts_In_Topic.topicid FROM Post \n" +
-                    "JOIN Posts_In_Topic ON Posts_In_Topic.postid = Post.id\n" +
-                    "WHERE Posts_In_Topic.topicid = " + topicId);
+            ResultSet r = s.executeQuery(query);
 
             int counter = 1;
 
@@ -277,9 +265,12 @@ public class API implements APIProvider {
             return Result.fatal("database error - " + ex.getMessage());
         }
 
+        query = "SELECT id, title FROM Topic WHERE id = " + topicId;
+
         try (Statement s = c.createStatement()) {
+
             // Determines link to create new post
-            ResultSet r = s.executeQuery("SELECT id, title FROM Topic WHERE id = " + topicId);
+            ResultSet r = s.executeQuery(query);
 
             List<TopicView> data =  new ArrayList<TopicView>();
 
