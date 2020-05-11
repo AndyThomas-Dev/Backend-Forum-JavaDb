@@ -9,6 +9,9 @@ INSERT INTO Topics_In_Forum VALUES (1, 2, 1);
 
 ALTER TABLE Post DROP COLUMN title;
 
+INSERT INTO table_name (column1, column2, column3, ...)
+VALUES (value1, value2, value3, ...);
+
 -- Select topics alongside their forumid
 SELECT Topic.title, Topic.id, Topics_In_Forum.forumid AS Forum FROM Topic
 JOIN Topics_In_Forum ON Topics_In_Forum.topicid = Topic.id
@@ -30,3 +33,57 @@ DELETE FROM Posts WHERE id > 0;
 DELETE FROM Topics_In_Forum WHERE id > 0;
 DELETE FROM Topic WHERE id > 0;
 DELETE FROM Forum WHERE id > 0;
+
+--- Question 3B Part 2
+WITH LikedPosts AS (
+	SELECT COUNT(User_Likes_Posts.postid) AS TotalPosts FROM Person
+	JOIN  User_Likes_Posts ON User_Likes_Posts.userid =  Person.id 
+	WHERE Person.id = 2
+	),
+
+LikedTopics AS (
+	SELECT COUNT(User_Likes_Topics.topicid) AS TotalTopics FROM Person
+	JOIN  User_Likes_Topics ON User_Likes_Topics.userid =  Person.id 
+	WHERE Person.id = 2
+	),
+	
+Totals AS (
+SELECT TotalPosts FROM LikedPosts
+UNION ALL
+SELECT TotalTopics FROM LikedTopics
+)
+
+SELECT SUM(TotalPosts) AS TotalLikes FROM Totals;
+
+----
+
+INSERT INTO User_Likes_Posts (postid, userid)
+VALUES (2, 2);
+
+INSERT INTO User_Likes_Topics (topicid, userid)
+VALUES (2, 2);
+---
+
+WITH RegionalGreens AS (
+	SELECT Ward.id AS WardId, Ward.name AS WardName, Candidate.ward, Party.name AS PartyName, Candidate.party, Candidate.votes, SUM(votes) AS GreenVotes
+	FROM Candidate 
+
+	JOIN Ward ON Candidate.ward = Ward.id
+	JOIN Party ON Candidate.party = Party.id
+
+	WHERE Party.name = "Green"
+	GROUP BY ward
+	),
+
+RegionalTotals AS (
+	SELECT Ward.id AS WardId, Ward.name AS WardName2, Candidate.ward, Candidate.party, Candidate.votes,
+        SUM(votes) AS VotesPerRegion
+	FROM Candidate
+
+	JOIN Ward ON Candidate.ward = Ward.id
+	GROUP BY ward )
+
+SELECT WardName, GreenVotes*100 / VotesPerRegion AS Percentage FROM Candidate
+JOIN RegionalGreens ON Candidate.ward = RegionalGreens.WardId
+JOIN RegionalTotals ON Candidate.ward = RegionalTotals.WardId
+GROUP BY WardName;

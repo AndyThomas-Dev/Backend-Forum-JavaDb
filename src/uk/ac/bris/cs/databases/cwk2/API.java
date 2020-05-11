@@ -39,8 +39,20 @@ public class API implements APIProvider {
 
     private final int maxForumTitleSize = 100;
 
+    private final int maxNameLength = 100;
+
+    private final int maxUsernameSize = 10;
+
     public API(Connection c) {
         this.c = c;
+    }
+
+    public int getMaxNameLength(){
+        return maxNameLength;
+    }
+
+    public int getMaxUsernameSize(){
+        return maxUsernameSize;
     }
 
     public int getMaxPostSize() {
@@ -58,11 +70,12 @@ public class API implements APIProvider {
     /* predefined methods */
 
     @Override
-    // Done
     public Result<Map<String, String>> getUsers() {
 
+        String query = "SELECT name, username FROM Person";
+
         try (Statement s = c.createStatement()) {
-            ResultSet r = s.executeQuery("SELECT name, username FROM Person");
+            ResultSet r = s.executeQuery(query);
 
             Map<String, String> data = new HashMap<>();
             while (r.next()) {
@@ -75,27 +88,56 @@ public class API implements APIProvider {
         }
     }
 
+    private String validateNewUserInput(String name, String username, String studentId){
+
+        if (studentId != null && studentId.equals("")) {
+            return ("StudentId can be null, but cannot be the empty string.");
+        }
+
+        if (name == null || name.equals("")) {
+            return ("Name cannot be empty.");
+        }
+        if (username == null || username.equals("")) {
+            return ("Username cannot be empty.");
+        }
+        if (name.length() > getMaxNameLength()) {
+            return ("Name is too long. Max length a hundred characters.");
+        }
+
+        if (username.length() > getMaxUsernameSize()) {
+            return ("Username is too long. Max length ten characters.");
+        }
+
+        return "Success";
+    }
+
     @Override
     // Includes user supplied data.
     public Result addNewPerson(String name, String username, String studentId) {
 
-        // Move to function
-        if (studentId != null && studentId.equals("")) {
-            return Result.failure("StudentId can be null, but cannot be the empty string.");
-        }
-        if (name == null || name.equals("")) {
-            return Result.failure("Name cannot be empty.");
-        }
-        if (username == null || username.equals("")) {
-            return Result.failure("Username cannot be empty.");
-        }
-        if (name.length() > 100) {
-            return Result.failure("Name is too long. Max length a hundred characters.");
+        String validation = validateNewUserInput(name, username, studentId);
+
+        if(!validation.equals("Success")){
+            return Result.failure(validation);
         }
 
-        if (username.length() > 10) {
-            return Result.failure("Username is too long. Max length ten characters.");
-        }
+//        if (studentId != null && studentId.equals("")) {
+//            return Result.failure("StudentId can be null, but cannot be the empty string.");
+//        }
+//
+//        if (name == null || name.equals("")) {
+//            return Result.failure("Name cannot be empty.");
+//        }
+//        if (username == null || username.equals("")) {
+//            return Result.failure("Username cannot be empty.");
+//        }
+//        if (name.length() > getMaxNameLength()) {
+//            return Result.failure("Name is too long. Max length a hundred characters.");
+//        }
+//
+//        if (username.length() > getMaxUsernameSize()) {
+//            return Result.failure("Username is too long. Max length ten characters.");
+//        }
 
         try (PreparedStatement p = c.prepareStatement(
             "SELECT count(1) AS c FROM Person WHERE username = ?"
@@ -295,12 +337,10 @@ public class API implements APIProvider {
 
         return Result.success();
     }
-
-    // DONE
+    
     @Override
     public Result<ForumView> getForum(int id) {
 
-        // First part - gets topics for forum
         List<SimpleTopicSummaryView> topicsInForum =  new ArrayList<SimpleTopicSummaryView>();
 
         try (Statement s = c.createStatement()) {
@@ -317,9 +357,11 @@ public class API implements APIProvider {
             return Result.fatal("database error - " + ex.getMessage());
         }
 
+        String query = "SELECT id, title FROM Forum WHERE id = " + id;
+
         // Get Id and Title for Forum
         try (Statement s = c.createStatement()) {
-            ResultSet r = s.executeQuery("SELECT id, title FROM Forum WHERE id = " + id );
+            ResultSet r = s.executeQuery(query);
 
             List<ForumView> data =  new ArrayList<ForumView>();
 
@@ -343,10 +385,14 @@ public class API implements APIProvider {
             return Result.failure("Text cannot be empty.");
         }
 
+        if(text.length() > getMaxPostSize() ){
+            return Result.failure("Post cannot be empty.");
+        }
+
+        String query = "INSERT INTO Post (username, text, postedAt) VALUES (?, ?, ?)";
+
         // Creating entry in Post table
-        try (PreparedStatement p = c.prepareStatement(
-                "INSERT INTO Post (username, text, postedAt) VALUES (?, ?, ?)"
-        )) {
+        try (PreparedStatement p = c.prepareStatement(query)) {
             date = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(new Date());
 
             p.setString(1, username);
@@ -366,26 +412,18 @@ public class API implements APIProvider {
         }
 
         // Getting the id of the new post.
-        try (Statement s = c.createStatement()) {
-            ResultSet r = s.executeQuery("SELECT id FROM Post WHERE username = '" + username +
-                    "' AND postedAt = '" + date + "'");
+        int postId = getPostId(username, date);
 
-            while (r.next()) {
-                data.add(r.getInt("id"));
-            }
-
-        } catch (SQLException ex) {
-            return Result.fatal("database error - " + ex.getMessage());
+        if(postId == -1){
+            return Result.fatal("Database error.");
         }
-
-        if(data.size() > 1) { return Result.fatal("Database error."); }
 
         // Inserting into associative table
         try (PreparedStatement p = c.prepareStatement(
                 "INSERT INTO Posts_In_Topic (postid, topicid) VALUES (?, ?)"
         )) {
 
-            p.setInt(1, data.get(0));
+            p.setInt(1, postId);
             p.setInt(2, topicId);
             p.executeUpdate();
 
@@ -421,10 +459,10 @@ public class API implements APIProvider {
         }
 
         String date;
+        String query = "INSERT INTO Topic (title, username, postedAT) VALUES (?, ?, ?)";
+
         // New topic is inserted into table
-        try (PreparedStatement p = c.prepareStatement(
-                "INSERT INTO Topic (title, username, postedAT) VALUES (?, ?, ?)"
-        )) {
+        try (PreparedStatement p = c.prepareStatement(query)) {
 
             date = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(new Date());
 
@@ -446,9 +484,10 @@ public class API implements APIProvider {
 
         // Get the Topic Id (for later use)
         List<Integer> topicId =  new ArrayList<Integer>();
+        query = "SELECT id FROM Topic WHERE username = '" + username + "' AND postedAt = '" + date + "'";
 
         try (Statement s = c.createStatement()) {
-            ResultSet r = s.executeQuery("SELECT id FROM Topic WHERE username = '" + username + "' AND postedAt = '" + date + "'");
+            ResultSet r = s.executeQuery(query);
 
             while (r.next()) {
                 topicId.add(r.getInt("id"));
@@ -499,18 +538,10 @@ public class API implements APIProvider {
             return Result.fatal(e.getMessage());
         }
 
-        List<Integer> data =  new ArrayList<Integer>();
+        int postId = getPostId(username, date);
 
-        // Getting the id of the new post.
-        try (Statement s = c.createStatement()) {
-            ResultSet r = s.executeQuery("SELECT id FROM Post WHERE username = '" + username + "' AND postedAt = '" + date + "'");
-
-            while (r.next()) {
-                data.add(r.getInt("id"));
-            }
-
-        } catch (SQLException ex) {
-            return Result.fatal("database error - " + ex.getMessage());
+        if(postId == -1){
+            return Result.fatal("Database error.");
         }
 
         // Inserting into next associative table
@@ -518,7 +549,7 @@ public class API implements APIProvider {
                 "INSERT INTO Posts_In_Topic (postid, topicid) VALUES (?, ?)"
         )) {
 
-            p.setInt(1, data.get(0));
+            p.setInt(1, postId);
             p.setInt(2, topicId.get(0));
             p.executeUpdate();
 
@@ -534,6 +565,29 @@ public class API implements APIProvider {
         }
 
         return Result.success();
+    }
+
+    private int getPostId(String username, String date){
+
+        List<Integer> data =  new ArrayList<Integer>();
+
+        try (Statement s = c.createStatement()) {
+            ResultSet r = s.executeQuery("SELECT id FROM Post WHERE username = '" + username +
+                    "' AND postedAt = '" + date + "'");
+
+            while (r.next()) {
+                data.add(r.getInt("id"));
+            }
+
+        } catch (SQLException ex) {
+            return -1;
+        }
+
+        if(data.size() > 1){
+            return -1;
+        }
+
+        return data.get(0);
     }
 
 }
