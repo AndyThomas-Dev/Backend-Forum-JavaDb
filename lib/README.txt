@@ -15,6 +15,7 @@ https://repo1.maven.org/maven2/net/java/dev/jna/jna/4.3.0/jna-4.3.0.jar
 https://repo1.maven.org/maven2/net/java/dev/jna/jna-platform/4.3.0/jna-platform-4.3.0.jar
 
 ---
+Below was the original specification provided by the unit director:
 
 Coursework 2 involves developing the data access layer of a web-based forum application. You can do this either on a lab machine or on your own laptop.
 
