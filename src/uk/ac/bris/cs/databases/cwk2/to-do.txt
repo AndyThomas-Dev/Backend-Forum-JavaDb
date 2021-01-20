@@ -1,4 +1,0 @@
-- Save SQL code into variable first.
-- Data validation. (length!)
-- Minimum lines of code.
-- Prevent SQL injection.
