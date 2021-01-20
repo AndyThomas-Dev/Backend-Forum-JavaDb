@@ -1,7 +1,7 @@
 # Forum Website Backend
 The final project for the databases module of my MSc course involved coding the backend of a forum website using Java, SQL and JavaDB.
 
-The relevant code for the backend is contained within the /src/uk/ac/bris/cs/databases/cwk2/ folder.
+The relevant SQL queries and Java code for the backend is contained within the /src/uk/ac/bris/cs/databases/cwk2/ folder.
 
 ## Original Specification
 Below was the original specification provided by the unit director:
